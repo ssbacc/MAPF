@@ -432,13 +432,14 @@ class Environment:
         pos: used for caculating communication mask
 
         '''
-        obs = np.zeros((self.num_agents, 6, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=bool)
+        obs = np.zeros((self.num_agents, 6, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=int)
 
         # 0 represents obstacle to match 0 padding in CNN 
         obstacle_map = np.pad(self.map, self.obs_radius, 'constant', constant_values=0)
 
-        agent_map = np.zeros((self.map_size), dtype=bool)
-        agent_map[self.agents_pos[:,0], self.agents_pos[:,1]] = 1
+        agent_map = np.zeros((self.map_size), dtype=int)
+        for i, agent_pos in enumerate(self.agents_pos):
+            agent_map[agent_pos[0], agent_pos[1]] = i + 1
         agent_map = np.pad(agent_map, self.obs_radius, 'constant', constant_values=0)
 
         for i, agent_pos in enumerate(self.agents_pos):

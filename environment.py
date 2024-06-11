@@ -312,7 +312,7 @@ class Environment:
         # first round check, these two conflicts have the heightest priority
         for agent_id in checking_list.copy():
 
-            if np.any(next_pos[agent_id]<0) or np.any(next_pos[agent_id]>=self.map_size[0]):
+            if np.any(next_pos[agent_id]<0) or np.any(next_pos[agent_id]>=self.map_size[1]):
                 # agent out of map range
                 rewards[agent_id] = self.reward_fn['collision']
                 next_pos[agent_id] = self.agents_pos[agent_id]

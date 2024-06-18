@@ -4,4 +4,4 @@
 
 prototype.ipynb, Deadend.ipynb 두 코드 위주로 하면 될 것 같습니다
 전체적인 플로우는 prototype에서 작업하면 될 것 같습니다
-deadend에서 휴리스틱 맵을 쓰게 내비게이트를 고치는 작업을 하고, prototype으로 통합하면 될 것 같아요
+deadend에서 휴리스틱 맵을 쓰게 내비게이트를 고치는 작업을 하고, prototype의 복사본에 통합하면 될 것 같아요

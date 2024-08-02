@@ -432,7 +432,7 @@ class Environment:
         pos: used for caculating communication mask
 
         '''
-        obs = np.zeros((self.num_agents, 6, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=int)
+        obs = np.zeros((self.num_agents, 10, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=int)
 
         # 0 represents obstacle to match 0 padding in CNN 
         obstacle_map = np.pad(self.map, self.obs_radius, 'constant', constant_values=0)
@@ -448,7 +448,8 @@ class Environment:
             obs[i, 0] = agent_map[x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
             obs[i, 0, self.obs_radius, self.obs_radius] = 0
             obs[i, 1] = obstacle_map[x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
-            obs[i, 2:] = self.heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
+            obs[i, 2:6] = self.heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
+            obs[i, 6:10] = self.perceived_heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
 
         # obs = np.concatenate((obs, self.last_actions), axis=1)
 
@@ -493,3 +494,58 @@ class Environment:
     def close(self, save=False):
         plt.close()
         del self.fig
+
+    def initialize_perceived_maps(self):
+        self.perceived_maps = np.array([np.copy(self.map) for _ in range(self.num_agents)])
+
+    def update_perceived_maps(self):
+        observe = self.observe()
+        for i in range(self.num_agents):
+            i_FOV = observe[0][i][0][2:7, 2:7]
+            greater_indices = np.argwhere(i_FOV > i + 1)
+            i_column = observe[1][i][1]
+            i_row = observe[1][i][0]
+
+            for dx, dy in greater_indices:
+                idx = i_FOV[dx, dy]-1
+                x, y = i_row + dx - 2, i_column + dy - 2
+                if np.array_equal(self.agents_pos[idx], self.goals_pos[idx]):
+                    self.perceived_maps[i][x, y] = 1
+
+    def get_perceived_heuri_map(self):
+        dist_map = np.ones((self.num_agents, *self.map_size), dtype=int) * 2147483647
+        for i in range(self.num_agents):
+            open_list = []
+            x, y = tuple(self.goals_pos[i])
+            open_list.append((x, y))
+            dist_map[i, x, y] = 0
+
+            while open_list:
+                x, y = open_list.pop(0)
+                dist = dist_map[i, x, y]
+
+                directions = [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+                for nx, ny in directions:
+                    if 0 <= nx < self.map_size[0] and 0 <= ny < self.map_size[1]:
+                        if self.perceived_maps[i][nx, ny] == 0 and dist_map[i, nx, ny] > dist + 1:
+                            dist_map[i, nx, ny] = dist + 1
+                            if (nx, ny) not in open_list:
+                                open_list.append((nx, ny))
+
+        self.perceived_heuri_map = np.zeros((self.num_agents, 4, *self.map_size), dtype=bool)
+        for x in range(self.map_size[0]):
+            for y in range(self.map_size[1]):
+                if self.perceived_maps[i][x, y] == 0:
+                    for i in range(self.num_agents):
+                        if x > 0 and dist_map[i, x-1, y] < dist_map[i, x, y]:
+                            self.perceived_heuri_map[i, 0, x, y] = True
+                        if x < self.map_size[0]-1 and dist_map[i, x+1, y] < dist_map[i, x, y]:
+                            self.perceived_heuri_map[i, 1, x, y] = True
+                        if y > 0 and dist_map[i, x, y-1] < dist_map[i, x, y]:
+                            self.perceived_heuri_map[i, 2, x, y] = True
+                        if y < self.map_size[1]-1 and dist_map[i, x, y+1] < dist_map[i, x, y]:
+                            self.perceived_heuri_map[i, 3, x, y] = True
+
+        self.perceived_heuri_map = np.pad(self.perceived_heuri_map, ((0, 0), (0, 0), (self.obs_radius, self.obs_radius), (self.obs_radius, self.obs_radius)))
+
+

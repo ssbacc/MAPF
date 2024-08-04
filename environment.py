@@ -432,7 +432,8 @@ class Environment:
         pos: used for caculating communication mask
 
         '''
-        obs = np.zeros((self.num_agents, 10, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=int)
+        obs = np.zeros((self.num_agents, 6, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=int)
+        # obs = np.zeros((self.num_agents, 10, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=int) use perceived heuristic map
 
         # 0 represents obstacle to match 0 padding in CNN 
         obstacle_map = np.pad(self.map, self.obs_radius, 'constant', constant_values=0)
@@ -449,7 +450,7 @@ class Environment:
             obs[i, 0, self.obs_radius, self.obs_radius] = 0
             obs[i, 1] = obstacle_map[x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
             obs[i, 2:6] = self.heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
-            obs[i, 6:10] = self.perceived_heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
+            # obs[i, 6:10] = self.perceived_heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1] use perceived heuristic map
 
         # obs = np.concatenate((obs, self.last_actions), axis=1)
 
